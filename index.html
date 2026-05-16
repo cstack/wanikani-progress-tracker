@@ -854,6 +854,17 @@
       if (text) loadingText.textContent = text;
     }
 
+    function trackEvent(eventName, params = {}) {
+      if (typeof window.gtag !== 'function') {
+        return;
+      }
+
+      window.gtag('event', eventName, {
+        app_name: 'wanikani-progress-tracker',
+        ...params
+      });
+    }
+
     // Confetti
     function launchConfetti() {
       const ctx = confettiCanvas.getContext('2d');
@@ -1210,6 +1221,12 @@
 
       // Save current completion for next comparison
       storage.save(STORAGE_KEYS.COMPLETION_PERCENTAGE, currentCompletion);
+
+      trackEvent('progress_refreshed', {
+        first_time: isFirstTime,
+        leveled_up_count: leveledUp.length,
+        leveled_down_count: leveledDown.length
+      });
     }
 
     // Main Flow
@@ -1289,6 +1306,7 @@
 
     function resetApp() {
       if (confirm('This will clear all saved data and your API token. Continue?')) {
+        trackEvent('app_reset');
         storage.clear();
         location.reload();
       }
@@ -1318,6 +1336,7 @@
         }
 
         storage.save(STORAGE_KEYS.TOKEN, token);
+        trackEvent('token_saved');
         currentToken = token;
         await loadData();
 

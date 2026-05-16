@@ -712,6 +712,7 @@ describe('WaniKani Progress Tracker Core Logic', () => {
 describe('Browser Integration', () => {
   const fs = require('fs');
   const path = require('path');
+  const indexHtml = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
 
   test('index.html should not redeclare variables from app.js in global scope', () => {
     // Read app.js and find top-level const declarations
@@ -724,8 +725,6 @@ describe('Browser Integration', () => {
     }
 
     // Read index.html and find inline script const declarations
-    const indexHtml = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
-
     // Extract inline script content (after app.js is loaded)
     const scriptMatch = indexHtml.match(/<script src="js\/app\.js"><\/script>\s*<script>([\s\S]*?)<\/script>/);
     expect(scriptMatch).toBeTruthy();
@@ -761,6 +760,14 @@ describe('Browser Integration', () => {
       }
     }
     expect(directConflicts).toEqual([]);
+  });
+
+  test('index.html should include analytics tracking for key app actions', () => {
+    expect(indexHtml).toContain('function trackEvent(eventName, params = {})');
+    expect(indexHtml).toContain("trackEvent('token_saved');");
+    expect(indexHtml).toContain("trackEvent('progress_refreshed', {");
+    expect(indexHtml).toContain("trackEvent('app_reset');");
+    expect(indexHtml).toContain("app_name: 'wanikani-progress-tracker'");
   });
 });
 
