@@ -1,0 +1,19 @@
+{
+  "name": "wanikani-progress-tracker",
+  "version": "1.0.0",
+  "description": "A browser-based tracker for WaniKani SRS progress between visits",
+  "scripts": {
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix"
+  },
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "eslint": "^8.57.0",
+    "jest": "^29.7.0",
+    "jest-environment-jsdom": "^29.7.0"
+  }
+}

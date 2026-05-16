@@ -1,0 +1,1338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WaniKani Progress Tracker</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+      min-height: 100vh;
+      color: #fff;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 10px;
+      font-size: 2.5rem;
+      background: linear-gradient(90deg, #ff6b9d, #c44569, #ff6b9d);
+      background-size: 200% auto;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      animation: shimmer 3s linear infinite;
+    }
+
+    @keyframes shimmer {
+      to { background-position: 200% center; }
+    }
+
+    .subtitle {
+      text-align: center;
+      color: #888;
+      margin-bottom: 40px;
+    }
+
+    /* Token Setup Screen */
+    .setup-screen {
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 16px;
+      padding: 40px;
+      max-width: 500px;
+      margin: 0 auto;
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .setup-screen h2 {
+      margin-bottom: 20px;
+      color: #ff6b9d;
+    }
+
+    .setup-screen p {
+      color: #aaa;
+      margin-bottom: 20px;
+      line-height: 1.6;
+    }
+
+    .setup-screen a {
+      color: #ff6b9d;
+    }
+
+    .input-group {
+      margin-bottom: 20px;
+    }
+
+    .input-group label {
+      display: block;
+      margin-bottom: 8px;
+      color: #ccc;
+    }
+
+    .input-group input {
+      width: 100%;
+      padding: 12px 16px;
+      border: 2px solid rgba(255, 255, 255, 0.1);
+      border-radius: 8px;
+      background: rgba(0, 0, 0, 0.3);
+      color: #fff;
+      font-size: 16px;
+      transition: border-color 0.3s;
+    }
+
+    .input-group input:focus {
+      outline: none;
+      border-color: #ff6b9d;
+    }
+
+    .btn {
+      display: inline-block;
+      padding: 12px 32px;
+      background: linear-gradient(135deg, #ff6b9d, #c44569);
+      border: none;
+      border-radius: 8px;
+      color: #fff;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 30px rgba(255, 107, 157, 0.3);
+    }
+
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.1);
+      margin-left: 10px;
+    }
+
+    .btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.2);
+      box-shadow: none;
+    }
+
+    /* Loading Screen */
+    .loading-screen {
+      text-align: center;
+      padding: 60px 20px;
+    }
+
+    .spinner {
+      width: 60px;
+      height: 60px;
+      border: 4px solid rgba(255, 255, 255, 0.1);
+      border-top-color: #ff6b9d;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 20px;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .loading-text {
+      color: #aaa;
+      font-size: 18px;
+    }
+
+    .progress-bar {
+      width: 300px;
+      height: 6px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 3px;
+      margin: 20px auto;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #ff6b9d, #c44569);
+      border-radius: 3px;
+      transition: width 0.3s;
+    }
+
+    /* Results Screen */
+    .results-screen {
+      animation: fadeIn 0.5s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .stats-summary {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 20px;
+      margin-bottom: 40px;
+    }
+
+    .stat-card {
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 12px;
+      padding: 20px;
+      text-align: center;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .stat-number {
+      font-size: 3rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, #ff6b9d, #ffd93d);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .stat-label {
+      color: #888;
+      margin-top: 5px;
+    }
+
+    /* SRS Stage Colors */
+    .srs-apprentice { color: #ff6b9d; }
+    .srs-guru { color: #9d65c9; }
+    .srs-master { color: #5d9cec; }
+    .srs-enlightened { color: #48cfad; }
+    .srs-burned { color: #ffd93d; }
+
+    .bg-apprentice { background: linear-gradient(135deg, #ff6b9d, #ff8fab); }
+    .bg-guru { background: linear-gradient(135deg, #9d65c9, #b388eb); }
+    .bg-master { background: linear-gradient(135deg, #5d9cec, #7eb8ff); }
+    .bg-enlightened { background: linear-gradient(135deg, #48cfad, #6ee7c7); }
+    .bg-burned { background: linear-gradient(135deg, #ffd93d, #ffe066); }
+    .bg-leveldown { background: linear-gradient(135deg, #ff6b6b, #ee5a5a); }
+
+    /* Level Up Groups */
+    .levelup-section {
+      margin-bottom: 40px;
+    }
+
+    /* Level Down Section */
+    .leveldown-section {
+      margin-top: 60px;
+      padding-top: 30px;
+      border-top: 1px solid rgba(255, 107, 107, 0.3);
+    }
+
+    .leveldown-section .levelup-header {
+      margin-bottom: 15px;
+    }
+
+    .leveldown-section .items-grid {
+      opacity: 0.85;
+    }
+
+    .leveldown-section .item-card {
+      border-color: rgba(255, 107, 107, 0.2);
+    }
+
+    .leveldown-section .srs-change {
+      background: rgba(255, 107, 107, 0.2);
+      color: #ff6b6b;
+    }
+
+    .levelup-header {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      margin-bottom: 20px;
+    }
+
+    .levelup-badge {
+      padding: 8px 20px;
+      border-radius: 20px;
+      font-weight: 600;
+      color: #1a1a2e;
+      font-size: 14px;
+    }
+
+    .levelup-count {
+      color: #888;
+      font-size: 14px;
+    }
+
+    .items-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+      gap: 12px;
+    }
+
+    .item-card {
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 12px;
+      padding: 15px 10px;
+      text-align: center;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      transition: transform 0.2s, box-shadow 0.2s;
+      animation: popIn 0.3s ease backwards;
+    }
+
+    .item-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    }
+
+    .item-card-link {
+      text-decoration: none;
+      color: inherit;
+      display: block;
+    }
+
+    @keyframes popIn {
+      from {
+        opacity: 0;
+        transform: scale(0.8);
+      }
+      to {
+        opacity: 1;
+        transform: scale(1);
+      }
+    }
+
+    .item-character {
+      font-size: 2rem;
+      margin-bottom: 5px;
+    }
+
+    .item-type {
+      font-size: 10px;
+      text-transform: uppercase;
+      color: #888;
+      letter-spacing: 1px;
+    }
+
+    .item-card.radical .item-character { color: #00aaff; }
+    .item-card.kanji .item-character { color: #ff00aa; }
+    .item-card.vocabulary .item-character { color: #aa00ff; font-size: 1.2rem; white-space: nowrap; }
+    .item-card.kana_vocabulary .item-character { color: #aa00ff; font-size: 1.2rem; white-space: nowrap; }
+
+    .item-meaning {
+      font-size: 11px;
+      color: #aaa;
+      margin-top: 5px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .srs-change {
+      font-size: 10px;
+      margin-top: 8px;
+      padding: 3px 8px;
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.1);
+      display: inline-block;
+    }
+
+    .item-elapsed {
+      font-size: 9px;
+      margin-top: 4px;
+      color: #facc15;
+      opacity: 0.9;
+    }
+
+    /* No Changes */
+    .no-changes {
+      text-align: center;
+      padding: 60px 20px;
+      color: #888;
+    }
+
+    .no-changes-icon {
+      font-size: 4rem;
+      margin-bottom: 20px;
+    }
+
+    .no-changes h2 {
+      color: #fff;
+      margin-bottom: 10px;
+    }
+
+    /* First Time */
+    .first-time {
+      text-align: center;
+      padding: 60px 20px;
+    }
+
+    .first-time-icon {
+      font-size: 4rem;
+      margin-bottom: 20px;
+    }
+
+    .first-time h2 {
+      color: #48cfad;
+      margin-bottom: 10px;
+    }
+
+    .first-time p {
+      color: #888;
+      max-width: 400px;
+      margin: 0 auto;
+    }
+
+    /* Confetti Canvas */
+    #confetti-canvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 1000;
+    }
+
+    /* Error */
+    .error-message {
+      background: rgba(255, 100, 100, 0.2);
+      border: 1px solid rgba(255, 100, 100, 0.3);
+      color: #ff6b6b;
+      padding: 15px 20px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+    }
+
+    /* Settings Button */
+    .settings-btn {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: #fff;
+      font-size: 24px;
+      cursor: pointer;
+      transition: background 0.3s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .settings-btn:hover {
+      background: rgba(255, 255, 255, 0.2);
+    }
+
+    /* Hidden */
+    .hidden {
+      display: none !important;
+    }
+
+    /* Last Updated */
+    .last-updated {
+      text-align: center;
+      color: #666;
+      font-size: 12px;
+      margin-top: 40px;
+    }
+
+    /* Celebration Text */
+    .celebration {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+
+    .celebration h2 {
+      font-size: 2rem;
+      margin-bottom: 10px;
+    }
+
+    .celebration p {
+      color: #888;
+    }
+
+    .celebration-emoji {
+      font-size: 3rem;
+      margin-bottom: 15px;
+      animation: bounce 0.5s ease infinite alternate;
+    }
+
+    @keyframes bounce {
+      from { transform: translateY(0); }
+      to { transform: translateY(-10px); }
+    }
+
+    /* Item Spread Table - WaniKani Style */
+    .item-spread {
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 16px;
+      padding: 24px;
+      margin-bottom: 30px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(10px);
+    }
+
+    .item-spread-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      padding-bottom: 15px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .item-spread-title {
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: #fff;
+    }
+
+    .item-spread-legend {
+      display: flex;
+      gap: 20px;
+      font-size: 0.85rem;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      color: #888;
+    }
+
+    .legend-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 3px;
+    }
+
+    .legend-dot.radical { background: #00aaff; }
+    .legend-dot.kanji { background: #ff00aa; }
+    .legend-dot.vocabulary { background: #aa00ff; }
+
+    .spread-table {
+      width: 100%;
+    }
+
+    .spread-row {
+      display: grid;
+      grid-template-columns: 180px repeat(4, 1fr);
+      gap: 8px;
+      align-items: center;
+      padding: 12px 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .spread-row:last-child {
+      border-bottom: none;
+    }
+
+    .spread-stage {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .stage-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1rem;
+    }
+
+    .stage-icon.apprentice { background: rgba(255, 107, 157, 0.2); color: #ff6b9d; }
+    .stage-icon.guru { background: rgba(157, 101, 201, 0.2); color: #9d65c9; }
+    .stage-icon.master { background: rgba(93, 156, 236, 0.2); color: #5d9cec; }
+    .stage-icon.enlightened { background: rgba(72, 207, 173, 0.2); color: #48cfad; }
+    .stage-icon.burned { background: rgba(255, 217, 61, 0.2); color: #ffd93d; }
+
+    .stage-name {
+      font-weight: 500;
+      color: #fff;
+    }
+
+    .spread-cell {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+    }
+
+    .spread-count {
+      min-width: 50px;
+      padding: 8px 12px;
+      border-radius: 8px;
+      text-align: center;
+      font-weight: 600;
+      font-size: 0.95rem;
+      transition: transform 0.3s ease, background-color 0.3s ease;
+    }
+
+    .spread-count.radical { background: rgba(0, 170, 255, 0.2); color: #00aaff; }
+    .spread-count.kanji { background: rgba(255, 0, 170, 0.2); color: #ff00aa; }
+    .spread-count.vocabulary { background: rgba(170, 0, 255, 0.2); color: #aa00ff; }
+    .spread-count.total { background: rgba(255, 255, 255, 0.1); color: #fff; }
+
+    /* Fire Emblem style level-up animation */
+    .level-up-delta {
+      position: absolute;
+      right: -8px;
+      top: -8px;
+      background: linear-gradient(135deg, #48cfad, #6ee7c7);
+      color: #1a1a2e;
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 2px 6px;
+      border-radius: 10px;
+      opacity: 0;
+      transform: scale(0) translateY(10px);
+      animation: deltaPopIn 0.6s ease forwards;
+      box-shadow: 0 2px 8px rgba(72, 207, 173, 0.5);
+    }
+
+    @keyframes deltaPopIn {
+      0% {
+        opacity: 0;
+        transform: scale(0) translateY(10px);
+      }
+      50% {
+        opacity: 1;
+        transform: scale(1.3) translateY(-5px);
+      }
+      70% {
+        transform: scale(0.9) translateY(0);
+      }
+      100% {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+      }
+    }
+
+    /* Count increment animation */
+    .spread-count.animating {
+      animation: countPulse 0.4s ease;
+    }
+
+    @keyframes countPulse {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.15); background-color: rgba(72, 207, 173, 0.3); }
+      100% { transform: scale(1); }
+    }
+
+    /* Staggered animation delays for rows */
+    .spread-row:nth-child(1) .level-up-delta { animation-delay: 0.1s; }
+    .spread-row:nth-child(2) .level-up-delta { animation-delay: 0.25s; }
+    .spread-row:nth-child(3) .level-up-delta { animation-delay: 0.4s; }
+    .spread-row:nth-child(4) .level-up-delta { animation-delay: 0.55s; }
+    .spread-row:nth-child(5) .level-up-delta { animation-delay: 0.7s; }
+
+    .spread-row:nth-child(1) .spread-count { animation-delay: 0.2s; }
+    .spread-row:nth-child(2) .spread-count { animation-delay: 0.35s; }
+    .spread-row:nth-child(3) .spread-count { animation-delay: 0.5s; }
+    .spread-row:nth-child(4) .spread-count { animation-delay: 0.65s; }
+    .spread-row:nth-child(5) .spread-count { animation-delay: 0.8s; }
+
+    /* Stage icons using emojis */
+    .stage-emoji {
+      font-size: 1.2rem;
+    }
+
+    /* Completion Percentage Display */
+    .completion-section {
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 16px;
+      padding: 24px;
+      margin-bottom: 30px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(10px);
+      text-align: center;
+    }
+
+    .completion-title {
+      font-size: 0.9rem;
+      color: #888;
+      margin-bottom: 12px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .completion-value {
+      font-size: 3rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, #48cfad, #6ee7c7);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      line-height: 1.2;
+    }
+
+    .completion-change {
+      display: inline-block;
+      margin-top: 10px;
+      padding: 4px 12px;
+      border-radius: 12px;
+      font-size: 0.9rem;
+      font-weight: 600;
+    }
+
+    .completion-change.positive {
+      background: rgba(72, 207, 173, 0.2);
+      color: #48cfad;
+    }
+
+    .completion-change.negative {
+      background: rgba(255, 107, 107, 0.2);
+      color: #ff6b6b;
+    }
+
+    .completion-change.neutral {
+      background: rgba(255, 255, 255, 0.1);
+      color: #888;
+    }
+
+    /* Mobile responsiveness for spread table */
+    @media (max-width: 600px) {
+      .spread-row {
+        grid-template-columns: 120px repeat(4, 1fr);
+        gap: 4px;
+      }
+
+      .spread-count {
+        min-width: 40px;
+        padding: 6px 8px;
+        font-size: 0.85rem;
+      }
+
+      .stage-icon {
+        width: 28px;
+        height: 28px;
+        font-size: 0.9rem;
+      }
+
+      .stage-name {
+        font-size: 0.9rem;
+      }
+
+      .item-spread-legend {
+        display: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <canvas id="confetti-canvas"></canvas>
+
+  <div class="container">
+    <h1>WaniKani Progress Tracker</h1>
+    <p class="subtitle">See what's leveled up since your last visit</p>
+
+    <!-- Setup Screen -->
+    <div id="setup-screen" class="setup-screen hidden">
+      <h2>Welcome!</h2>
+      <p>
+        To get started, you'll need a WaniKani API token. You can generate one at
+        <a href="https://www.wanikani.com/settings/personal_access_tokens" target="_blank">
+          WaniKani Settings
+        </a>.
+      </p>
+      <div id="setup-error" class="error-message hidden"></div>
+      <div class="input-group">
+        <label for="api-token">API Token</label>
+        <input type="password" id="api-token" placeholder="Enter your WaniKani API token">
+      </div>
+      <button id="save-token-btn" class="btn">Get Started</button>
+    </div>
+
+    <!-- Loading Screen -->
+    <div id="loading-screen" class="loading-screen hidden">
+      <div class="spinner"></div>
+      <div class="loading-text" id="loading-text">Connecting to WaniKani...</div>
+      <div class="progress-bar">
+        <div class="progress-fill" id="progress-fill" style="width: 0%"></div>
+      </div>
+    </div>
+
+    <!-- Results Screen -->
+    <div id="results-screen" class="results-screen hidden"></div>
+  </div>
+
+  <button id="settings-btn" class="settings-btn hidden" title="Settings">⚙️</button>
+
+  <script src="js/app.js"></script>
+  <script>
+    // Wrap in IIFE to avoid redeclaring const variables from app.js in global scope
+    (function() {
+    // Import from core module
+    const {
+      STORAGE_KEYS,
+      SRS_STAGES,
+      SRS_LEVEL_NAMES,
+      createStorage,
+      compareAssignments,
+      groupByStage,
+      getSubjectDisplayData,
+      getVocabCharFontSize,
+      getWaniKaniUrl,
+      calculateSrsCounts,
+      calculateLevelUpDeltas,
+      calculateCompletionPercentage,
+      sortByStartedAt,
+      fetchAssignments,
+      fetchSubjects,
+      validateToken
+    } = WaniKaniTracker;
+
+    // Create storage instance
+    const storage = createStorage(localStorage);
+
+    // Empty deltas template for rendering the spread table without changes
+    const EMPTY_DELTAS = {
+      apprentice: { radical: 0, kanji: 0, vocabulary: 0, total: 0 },
+      guru: { radical: 0, kanji: 0, vocabulary: 0, total: 0 },
+      master: { radical: 0, kanji: 0, vocabulary: 0, total: 0 },
+      enlightened: { radical: 0, kanji: 0, vocabulary: 0, total: 0 },
+      burned: { radical: 0, kanji: 0, vocabulary: 0, total: 0 }
+    };
+
+    // DOM Elements
+    const setupScreen = document.getElementById('setup-screen');
+    const loadingScreen = document.getElementById('loading-screen');
+    const resultsScreen = document.getElementById('results-screen');
+    const apiTokenInput = document.getElementById('api-token');
+    const saveTokenBtn = document.getElementById('save-token-btn');
+    const setupError = document.getElementById('setup-error');
+    const loadingText = document.getElementById('loading-text');
+    const progressFill = document.getElementById('progress-fill');
+    const settingsBtn = document.getElementById('settings-btn');
+    const confettiCanvas = document.getElementById('confetti-canvas');
+
+    // State
+    let currentToken = null;
+
+    // Utility Functions
+    function showScreen(screen) {
+      [setupScreen, loadingScreen, resultsScreen].forEach(s => s.classList.add('hidden'));
+      screen.classList.remove('hidden');
+      settingsBtn.classList.toggle('hidden', screen === setupScreen);
+    }
+
+    function showError(message) {
+      setupError.textContent = message;
+      setupError.classList.remove('hidden');
+    }
+
+    function hideError() {
+      setupError.classList.add('hidden');
+    }
+
+    function updateProgress(percent, text) {
+      progressFill.style.width = `${percent}%`;
+      if (text) loadingText.textContent = text;
+    }
+
+    // Confetti
+    function launchConfetti() {
+      const ctx = confettiCanvas.getContext('2d');
+      confettiCanvas.width = window.innerWidth;
+      confettiCanvas.height = window.innerHeight;
+
+      const particles = [];
+      const colors = ['#ff6b9d', '#c44569', '#ffd93d', '#48cfad', '#9d65c9', '#5d9cec'];
+
+      for (let i = 0; i < 150; i++) {
+        particles.push({
+          x: Math.random() * confettiCanvas.width,
+          y: Math.random() * confettiCanvas.height - confettiCanvas.height,
+          vx: (Math.random() - 0.5) * 10,
+          vy: Math.random() * 3 + 2,
+          color: colors[Math.floor(Math.random() * colors.length)],
+          size: Math.random() * 10 + 5,
+          rotation: Math.random() * 360,
+          rotationSpeed: (Math.random() - 0.5) * 10
+        });
+      }
+
+      function animate() {
+        ctx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
+
+        let activeParticles = 0;
+
+        particles.forEach(p => {
+          if (p.y < confettiCanvas.height + 50) {
+            activeParticles++;
+
+            ctx.save();
+            ctx.translate(p.x, p.y);
+            ctx.rotate(p.rotation * Math.PI / 180);
+            ctx.fillStyle = p.color;
+            ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size * 0.6);
+            ctx.restore();
+
+            p.x += p.vx;
+            p.y += p.vy;
+            p.vy += 0.1;
+            p.vx *= 0.99;
+            p.rotation += p.rotationSpeed;
+          }
+        });
+
+        if (activeParticles > 0) {
+          requestAnimationFrame(animate);
+        } else {
+          ctx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
+        }
+      }
+
+      animate();
+    }
+
+    // Stage emojis for the table
+    const STAGE_EMOJIS = {
+      apprentice: '🥚',
+      guru: '🐣',
+      master: '🐥',
+      enlightened: '🐤',
+      burned: '🔥'
+    };
+
+    // Render the completion percentage section
+    function renderCompletionSection(currentPercentage, previousPercentage) {
+      const change = previousPercentage !== null ? currentPercentage - previousPercentage : null;
+
+      let changeHtml = '';
+      if (change !== null) {
+        if (change > 0) {
+          changeHtml = `<div class="completion-change positive">+${change.toFixed(2)}%</div>`;
+        } else if (change < 0) {
+          changeHtml = `<div class="completion-change negative">${change.toFixed(2)}%</div>`;
+        } else {
+          changeHtml = `<div class="completion-change neutral">No change</div>`;
+        }
+      }
+
+      return `
+        <div class="completion-section">
+          <div class="completion-title">Total WaniKani Completion</div>
+          <div class="completion-value">${currentPercentage.toFixed(2)}%</div>
+          ${changeHtml}
+        </div>
+      `;
+    }
+
+    // Render the Item Spread table with animated level-up deltas
+    function renderItemSpreadTable(counts, deltas) {
+      const stageOrder = ['burned', 'enlightened', 'master', 'guru', 'apprentice'];
+
+      let html = `
+        <div class="item-spread">
+          <div class="item-spread-header">
+            <span class="item-spread-title">Item Spread</span>
+            <div class="item-spread-legend">
+              <span class="legend-item"><span class="legend-dot radical"></span>Radicals</span>
+              <span class="legend-item"><span class="legend-dot kanji"></span>Kanji</span>
+              <span class="legend-item"><span class="legend-dot vocabulary"></span>Vocabulary</span>
+            </div>
+          </div>
+          <div class="spread-table">
+      `;
+
+      stageOrder.forEach(stage => {
+        const stageCounts = counts[stage];
+        const stageDeltas = deltas[stage];
+        const hasDeltas = stageDeltas.total > 0;
+
+        html += `
+          <div class="spread-row">
+            <div class="spread-stage">
+              <div class="stage-icon ${stage}">
+                <span class="stage-emoji">${STAGE_EMOJIS[stage]}</span>
+              </div>
+              <span class="stage-name">${SRS_LEVEL_NAMES[stage]}</span>
+            </div>
+            <div class="spread-cell">
+              <span class="spread-count radical ${hasDeltas && stageDeltas.radical > 0 ? 'animating' : ''}">${stageCounts.radical}</span>
+              ${stageDeltas.radical > 0 ? `<span class="level-up-delta">+${stageDeltas.radical}</span>` : ''}
+            </div>
+            <div class="spread-cell">
+              <span class="spread-count kanji ${hasDeltas && stageDeltas.kanji > 0 ? 'animating' : ''}">${stageCounts.kanji}</span>
+              ${stageDeltas.kanji > 0 ? `<span class="level-up-delta">+${stageDeltas.kanji}</span>` : ''}
+            </div>
+            <div class="spread-cell">
+              <span class="spread-count vocabulary ${hasDeltas && stageDeltas.vocabulary > 0 ? 'animating' : ''}">${stageCounts.vocabulary}</span>
+              ${stageDeltas.vocabulary > 0 ? `<span class="level-up-delta">+${stageDeltas.vocabulary}</span>` : ''}
+            </div>
+            <div class="spread-cell">
+              <span class="spread-count total ${hasDeltas ? 'animating' : ''}">${stageCounts.total}</span>
+              ${stageDeltas.total > 0 ? `<span class="level-up-delta">+${stageDeltas.total}</span>` : ''}
+            </div>
+          </div>
+        `;
+      });
+
+      html += '</div></div>';
+      return html;
+    }
+
+    // Render Functions
+    function renderResults(leveledUp, leveledDown, subjects, assignments, isFirstTime) {
+      resultsScreen.innerHTML = '';
+
+      // Calculate completion percentage
+      const currentCompletion = calculateCompletionPercentage(assignments);
+      const previousCompletion = storage.load(STORAGE_KEYS.COMPLETION_PERCENTAGE);
+
+      if (isFirstTime) {
+        // For first time, show the Item Spread table without deltas
+        const counts = calculateSrsCounts(assignments, subjects);
+
+        let html = '';
+        // Show completion percentage (no change for first time)
+        html += renderCompletionSection(currentCompletion, null);
+
+        html += `
+          <div class="first-time">
+            <div class="first-time-icon">🎉</div>
+            <h2>Setup Complete!</h2>
+            <p>Your current progress has been saved. Come back later to see what's leveled up!</p>
+          </div>
+        `;
+        html += renderItemSpreadTable(counts, EMPTY_DELTAS);
+
+        const lastUpdated = storage.load(STORAGE_KEYS.LAST_UPDATED);
+        if (lastUpdated) {
+          html += `<div class="last-updated">Last checked: ${new Date(lastUpdated).toLocaleString()}</div>`;
+        }
+
+        resultsScreen.innerHTML = html;
+        showScreen(resultsScreen);
+
+        // Save current completion for next comparison
+        storage.save(STORAGE_KEYS.COMPLETION_PERCENTAGE, currentCompletion);
+        return;
+      }
+
+      // Calculate counts and deltas
+      const counts = calculateSrsCounts(assignments, subjects);
+      const deltas = calculateLevelUpDeltas(leveledUp, subjects);
+
+      if (leveledUp.length === 0 && leveledDown.length === 0) {
+        let html = '';
+        // Show completion percentage with change from last time
+        html += renderCompletionSection(currentCompletion, previousCompletion);
+
+        html += `
+          <div class="no-changes">
+            <div class="no-changes-icon">📚</div>
+            <h2>No changes yet</h2>
+            <p>Keep studying! Your progress will show up here after your next review session.</p>
+          </div>
+        `;
+        html += renderItemSpreadTable(counts, EMPTY_DELTAS);
+
+        const lastUpdated = storage.load(STORAGE_KEYS.LAST_UPDATED);
+        if (lastUpdated) {
+          html += `<div class="last-updated">Last checked: ${new Date(lastUpdated).toLocaleString()}</div>`;
+        }
+
+        resultsScreen.innerHTML = html;
+        showScreen(resultsScreen);
+
+        // Save current completion for next comparison
+        storage.save(STORAGE_KEYS.COMPLETION_PERCENTAGE, currentCompletion);
+        return;
+      }
+
+      // Build header
+      let html = '';
+
+      // Show completion percentage at the very top
+      html += renderCompletionSection(currentCompletion, previousCompletion);
+
+      if (leveledUp.length > 0) {
+        // Celebrate level-ups!
+        launchConfetti();
+
+        html += `
+          <div class="celebration">
+            <div class="celebration-emoji">🎊</div>
+            <h2>Amazing Progress!</h2>
+            <p>${leveledUp.length} item${leveledUp.length !== 1 ? 's' : ''} leveled up since your last visit!</p>
+          </div>
+        `;
+      } else {
+        // Only level-downs, no celebration
+        html += `
+          <div class="no-changes">
+            <div class="no-changes-icon">📚</div>
+            <h2>No level-ups yet</h2>
+            <p>Keep studying! Some items went down in level - see below.</p>
+          </div>
+        `;
+      }
+
+      // Add the animated Item Spread table
+      html += renderItemSpreadTable(counts, deltas);
+
+      // Group by new SRS stage for detailed item display
+      const grouped = groupByStage(leveledUp);
+
+      // Create assignment lookup map for elapsed time calculation
+      const assignmentMap = {};
+      assignments.forEach(a => {
+        assignmentMap[a.data.subject_id] = a.data;
+      });
+
+      // Item sections
+      const stageOrder = ['burned', 'enlightened', 'master', 'guru', 'apprentice'];
+      stageOrder.forEach(stage => {
+        if (grouped[stage]) {
+          // Sort items by started_at date (oldest to newest)
+          const sortedItems = sortByStartedAt(grouped[stage], assignmentMap);
+
+          html += `
+            <div class="levelup-section">
+              <div class="levelup-header">
+                <span class="levelup-badge bg-${stage}">${SRS_LEVEL_NAMES[stage]}</span>
+                <span class="levelup-count">${sortedItems.length} item${sortedItems.length !== 1 ? 's' : ''}</span>
+              </div>
+              <div class="items-grid">
+          `;
+
+          sortedItems.forEach((item, index) => {
+            const displayData = getSubjectDisplayData(subjects[item.subjectId]);
+            if (displayData) {
+              const oldStageName = SRS_STAGES[item.oldStage]?.name || 'Unknown';
+              const newStageName = SRS_STAGES[item.newStage]?.name || 'Unknown';
+              const wanikaniUrl = getWaniKaniUrl(displayData);
+
+              // For burned items, show elapsed time since started
+              let elapsedHtml = '';
+              if (stage === 'burned') {
+                const assignment = assignmentMap[item.subjectId];
+                if (assignment?.started_at) {
+                  const elapsed = formatElapsedTime(assignment.started_at);
+                  if (elapsed) {
+                    elapsedHtml = `<div class="item-elapsed">${elapsed}</div>`;
+                  }
+                }
+              }
+
+              const isVocab = displayData.type === 'vocabulary' || displayData.type === 'kana_vocabulary';
+              const charStyle = isVocab ? ` style="font-size: ${getVocabCharFontSize(displayData.character)}"` : '';
+              html += `
+                <a href="${wanikaniUrl}" target="_blank" rel="noopener noreferrer" class="item-card-link">
+                  <div class="item-card ${displayData.type}" style="animation-delay: ${index * 0.03}s">
+                    <div class="item-character"${charStyle}>${displayData.character}</div>
+                    <div class="item-type">${displayData.type}</div>
+                    <div class="item-meaning">${displayData.meaning}</div>
+                    <div class="srs-change">${oldStageName.split(' ')[0]} → ${newStageName.split(' ')[0]}</div>
+                    ${elapsedHtml}
+                  </div>
+                </a>
+              `;
+            }
+          });
+
+          html += '</div></div>';
+        }
+      });
+
+      // Render level-down section at the bottom
+      if (leveledDown.length > 0) {
+        // Sort level-down items by started_at date (oldest to newest)
+        const sortedLeveledDown = sortByStartedAt(leveledDown, assignmentMap);
+
+        html += `
+          <div class="leveldown-section">
+            <div class="levelup-header">
+              <span class="levelup-badge bg-leveldown">Level Decreased</span>
+              <span class="levelup-count">${sortedLeveledDown.length} item${sortedLeveledDown.length !== 1 ? 's' : ''}</span>
+            </div>
+            <div class="items-grid">
+        `;
+
+        sortedLeveledDown.forEach((item, index) => {
+          const displayData = getSubjectDisplayData(subjects[item.subjectId]);
+          if (displayData) {
+            const oldStageName = SRS_STAGES[item.oldStage]?.name || 'Unknown';
+            const newStageName = SRS_STAGES[item.newStage]?.name || 'Unknown';
+            const wanikaniUrl = getWaniKaniUrl(displayData);
+
+            const isVocabDown = displayData.type === 'vocabulary' || displayData.type === 'kana_vocabulary';
+            const charStyleDown = isVocabDown ? ` style="font-size: ${getVocabCharFontSize(displayData.character)}"` : '';
+            html += `
+              <a href="${wanikaniUrl}" target="_blank" rel="noopener noreferrer" class="item-card-link">
+                <div class="item-card ${displayData.type}" style="animation-delay: ${index * 0.03}s">
+                  <div class="item-character"${charStyleDown}>${displayData.character}</div>
+                  <div class="item-type">${displayData.type}</div>
+                  <div class="item-meaning">${displayData.meaning}</div>
+                  <div class="srs-change">${oldStageName.split(' ')[0]} → ${newStageName.split(' ')[0]}</div>
+                </div>
+              </a>
+            `;
+          }
+        });
+
+        html += '</div></div>';
+      }
+
+      const lastUpdated = storage.load(STORAGE_KEYS.LAST_UPDATED);
+      if (lastUpdated) {
+        html += `<div class="last-updated">Last checked: ${new Date(lastUpdated).toLocaleString()}</div>`;
+      }
+
+      resultsScreen.innerHTML = html;
+      showScreen(resultsScreen);
+
+      // Save current completion for next comparison
+      storage.save(STORAGE_KEYS.COMPLETION_PERCENTAGE, currentCompletion);
+    }
+
+    // Main Flow
+    async function initApp() {
+      const token = storage.load(STORAGE_KEYS.TOKEN);
+
+      if (!token) {
+        showScreen(setupScreen);
+        return;
+      }
+
+      currentToken = token;
+      await loadData();
+    }
+
+    async function loadData() {
+      showScreen(loadingScreen);
+
+      try {
+        // Fetch current assignments
+        updateProgress(0, 'Fetching your assignments...');
+        const newAssignments = await fetchAssignments(currentToken, (page, total) => {
+          updateProgress((page / total) * 50, `Fetching assignments... (${page}/${total})`);
+        });
+
+        // Get old assignments from storage
+        const oldAssignments = storage.load(STORAGE_KEYS.ASSIGNMENTS);
+        const isFirstTime = !oldAssignments;
+
+        // Compare
+        let leveledUp = [];
+        let leveledDown = [];
+        if (!isFirstTime) {
+          const comparison = compareAssignments(oldAssignments, newAssignments);
+          leveledUp = comparison.leveledUp;
+          leveledDown = comparison.leveledDown;
+        }
+
+        // Fetch subjects only for leveled up/down items (not all on first time - that causes quota issues)
+        let subjects = storage.load(STORAGE_KEYS.SUBJECTS) || {};
+
+        // Only fetch subjects for items that changed level and aren't already cached
+        const allChangedItems = [...leveledUp, ...leveledDown];
+        const subjectIdsToFetch = allChangedItems
+          .map(item => item.subjectId)
+          .filter(id => !subjects[id]);
+
+        if (subjectIdsToFetch.length > 0) {
+          updateProgress(50, 'Fetching item details...');
+          const newSubjects = await fetchSubjects(currentToken, subjectIdsToFetch, (chunk, total) => {
+            updateProgress(50 + (chunk / total) * 50, `Fetching item details... (${chunk}/${total})`);
+          });
+          subjects = { ...subjects, ...newSubjects };
+          storage.save(STORAGE_KEYS.SUBJECTS, subjects);
+        }
+
+        // Save new assignments
+        storage.save(STORAGE_KEYS.ASSIGNMENTS, newAssignments);
+        storage.save(STORAGE_KEYS.LAST_UPDATED, new Date().toISOString());
+
+        // Render results
+        renderResults(leveledUp, leveledDown, subjects, newAssignments, isFirstTime);
+
+      } catch (error) {
+        console.error('Error loading data:', error);
+        resultsScreen.innerHTML = `
+          <div class="error-message">
+            Failed to load data: ${error.message}
+            <br><br>
+            <button class="btn btn-secondary" onclick="loadData()">Retry</button>
+            <button class="btn btn-secondary" onclick="resetApp()">Reset App</button>
+          </div>
+        `;
+        showScreen(resultsScreen);
+      }
+    }
+
+    function resetApp() {
+      if (confirm('This will clear all saved data and your API token. Continue?')) {
+        storage.clear();
+        location.reload();
+      }
+    }
+
+    // Event Listeners
+    saveTokenBtn.addEventListener('click', async () => {
+      const token = apiTokenInput.value.trim();
+
+      if (!token) {
+        showError('Please enter your API token');
+        return;
+      }
+
+      hideError();
+      saveTokenBtn.disabled = true;
+      saveTokenBtn.textContent = 'Validating...';
+
+      try {
+        const isValid = await validateToken(token);
+
+        if (!isValid) {
+          showError('Invalid API token. Please check and try again.');
+          saveTokenBtn.disabled = false;
+          saveTokenBtn.textContent = 'Get Started';
+          return;
+        }
+
+        storage.save(STORAGE_KEYS.TOKEN, token);
+        currentToken = token;
+        await loadData();
+
+      } catch (error) {
+        showError('Failed to validate token. Please check your internet connection.');
+        saveTokenBtn.disabled = false;
+        saveTokenBtn.textContent = 'Get Started';
+      }
+    });
+
+    apiTokenInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') saveTokenBtn.click();
+    });
+
+    settingsBtn.addEventListener('click', () => {
+      if (confirm('Reset app and clear all data?')) {
+        resetApp();
+      }
+    });
+
+    // Start
+    initApp();
+    })();
+  </script>
+</body>
+</html>
